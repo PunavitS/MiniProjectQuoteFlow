@@ -1,0 +1,26 @@
+using Microsoft.Extensions.DependencyInjection;
+using QuoteFlow.Core.Jobs;
+using QuoteFlow.Core.Locations;
+using QuoteFlow.Core.Pricing;
+using QuoteFlow.Core.Rules;
+using QuoteFlow.Infrastructure.Jobs;
+using QuoteFlow.Infrastructure.Locations;
+using QuoteFlow.Infrastructure.Pricing;
+using QuoteFlow.Infrastructure.Rules;
+
+namespace QuoteFlow.Infrastructure;
+
+public static class DependencyInjection
+{
+    public static IServiceCollection AddInfrastructure(this IServiceCollection services)
+    {
+        services.AddSingleton<IRuleRepository, RuleRepository>();
+        services.AddSingleton<IJobRepository, JobRepository>();
+        services.AddSingleton<ILocationRepository, LocationRepository>();
+        services.AddSingleton<IPricingEngine, PricingEngine>();
+        services.AddSingleton<BulkJobWorker>();
+        services.AddHostedService(sp => sp.GetRequiredService<BulkJobWorker>());
+        services.AddHttpClient<IDistanceService, OsrmDistanceService>();
+        return services;
+    }
+}

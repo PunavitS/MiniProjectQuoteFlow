@@ -1,0 +1,9 @@
+origin_code,destination_code,weight,base_price
+BKK,CNX,3.0,100.00
+BKK,LPG,7.5,180.00
+BKK,HKT,2.0,100.00
+CNX,BKK,10.0,180.00
+BKK,SGZ,5.0,100.00
+BKK,BKK,20.0,300.00
+NWT,BKK,1.5,100.00
+BKK,PTN,12.0,180.00

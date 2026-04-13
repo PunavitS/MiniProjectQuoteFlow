@@ -1,0 +1,159 @@
+[
+  {
+    "id": "11111111-0000-0000-0000-000000000001",
+    "name": "Standard Weight Tier 0-5kg",
+    "description": "Base price for shipments up to 5kg",
+    "ruleType": 2,
+    "priority": 10,
+    "isActive": true,
+    "effectiveFrom": "2024-01-01T00:00:00+00:00",
+    "effectiveTo": null,
+    "parameters": "{\"minWeight\":0,\"maxWeight\":5,\"price\":100}"
+  },
+  {
+    "id": "11111111-0000-0000-0000-000000000002",
+    "name": "Standard Weight Tier 5-15kg",
+    "description": "Base price for shipments 5-15kg",
+    "ruleType": 2,
+    "priority": 11,
+    "isActive": true,
+    "effectiveFrom": "2024-01-01T00:00:00+00:00",
+    "effectiveTo": null,
+    "parameters": "{\"minWeight\":5.01,\"maxWeight\":15,\"price\":180}"
+  },
+  {
+    "id": "11111111-0000-0000-0000-000000000003",
+    "name": "Standard Weight Tier 15-30kg",
+    "description": "Base price for shipments 15-30kg",
+    "ruleType": 2,
+    "priority": 12,
+    "isActive": true,
+    "effectiveFrom": "2024-01-01T00:00:00+00:00",
+    "effectiveTo": null,
+    "parameters": "{\"minWeight\":15.01,\"maxWeight\":30,\"price\":300}"
+  },
+  {
+    "id": "11111111-0000-0000-0000-000000000004",
+    "name": "Remote Area Surcharge - North",
+    "description": "Surcharge for northern remote areas (CNX, LPG, PYY)",
+    "ruleType": 1,
+    "priority": 20,
+    "isActive": true,
+    "effectiveFrom": "2024-01-01T00:00:00+00:00",
+    "effectiveTo": null,
+    "parameters": "{\"areaCodes\":[\"CNX\",\"LPG\",\"PYY\"],\"surchargeAmount\":50}"
+  },
+  {
+    "id": "11111111-0000-0000-0000-000000000005",
+    "name": "Remote Area Surcharge - South",
+    "description": "Surcharge for southern remote areas (SGZ, NWT, PTN)",
+    "ruleType": 1,
+    "priority": 21,
+    "isActive": true,
+    "effectiveFrom": "2024-01-01T00:00:00+00:00",
+    "effectiveTo": null,
+    "parameters": "{\"areaCodes\":[\"SGZ\",\"NWT\",\"PTN\"],\"surchargeAmount\":60}"
+  },
+  {
+    "id": "11111111-0000-0000-0000-000000000006",
+    "name": "Flash Sale Friday Morning",
+    "description": "20% discount every Friday 08:00-12:00",
+    "ruleType": 0,
+    "priority": 30,
+    "isActive": true,
+    "effectiveFrom": "2024-01-01T00:00:00+00:00",
+    "effectiveTo": null,
+    "parameters": "{\"startHour\":8,\"endHour\":12,\"daysOfWeek\":[5],\"discountPercent\":20}"
+  },
+  {
+    "name": "USD → THB",
+    "ruleType": 3,
+    "priority": 1,
+    "isActive": true,
+    "effectiveFrom": "2024-01-01T00:00:00+00:00",
+    "effectiveTo": null,
+    "parameters": "{\"fromCurrency\":\"USD\",\"toCurrency\":\"THB\",\"rate\":36.00}"
+  },
+  {
+    "name": "THB → USD",
+    "ruleType": 3,
+    "priority": 1,
+    "isActive": true,
+    "effectiveFrom": "2024-01-01T00:00:00+00:00",
+    "effectiveTo": null,
+    "parameters": "{\"fromCurrency\":\"THB\",\"toCurrency\":\"USD\",\"rate\":0.0278}"
+  },
+  {
+    "name": "EUR → THB",
+    "ruleType": 3,
+    "priority": 1,
+    "isActive": true,
+    "effectiveFrom": "2024-01-01T00:00:00+00:00",
+    "effectiveTo": null,
+    "parameters": "{\"fromCurrency\":\"EUR\",\"toCurrency\":\"THB\",\"rate\":38.50}"
+  },
+  {
+    "name": "THB → EUR",
+    "ruleType": 3,
+    "priority": 1,
+    "isActive": true,
+    "effectiveFrom": "2024-01-01T00:00:00+00:00",
+    "effectiveTo": null,
+    "parameters": "{\"fromCurrency\":\"THB\",\"toCurrency\":\"EUR\",\"rate\":0.0260}"
+  },
+  {
+    "id": "22222222-0000-0000-0000-000000000001",
+    "name": "Fuel Price (THB/Liter)",
+    "description": "Current fuel price per liter in THB. Update via PUT /rules/{id} when price changes.",
+    "ruleType": 4,
+    "priority": 40,
+    "isActive": true,
+    "effectiveFrom": "2024-01-01T00:00:00+00:00",
+    "effectiveTo": null,
+    "parameters": "{\"pricePerLiter\":40.50}"
+  },
+  {
+    "id": "33333333-0000-0000-0000-000000000001",
+    "name": "Vehicle: Motorcycle",
+    "description": "Fuel efficiency and price multiplier for motorcycle",
+    "ruleType": 5,
+    "priority": 35,
+    "isActive": true,
+    "effectiveFrom": "2024-01-01T00:00:00+00:00",
+    "effectiveTo": null,
+    "parameters": "{\"vehicleType\":\"Motorcycle\",\"kmPerLiter\":35.0,\"priceMultiplier\":0.8}"
+  },
+  {
+    "id": "33333333-0000-0000-0000-000000000002",
+    "name": "Vehicle: Car",
+    "description": "Fuel efficiency and price multiplier for car",
+    "ruleType": 5,
+    "priority": 35,
+    "isActive": true,
+    "effectiveFrom": "2024-01-01T00:00:00+00:00",
+    "effectiveTo": null,
+    "parameters": "{\"vehicleType\":\"Car\",\"kmPerLiter\":14.0,\"priceMultiplier\":1.0}"
+  },
+  {
+    "id": "33333333-0000-0000-0000-000000000003",
+    "name": "Vehicle: Van",
+    "description": "Fuel efficiency and price multiplier for van",
+    "ruleType": 5,
+    "priority": 35,
+    "isActive": true,
+    "effectiveFrom": "2024-01-01T00:00:00+00:00",
+    "effectiveTo": null,
+    "parameters": "{\"vehicleType\":\"Van\",\"kmPerLiter\":10.0,\"priceMultiplier\":1.2}"
+  },
+  {
+    "id": "33333333-0000-0000-0000-000000000004",
+    "name": "Vehicle: Truck",
+    "description": "Fuel efficiency and price multiplier for truck",
+    "ruleType": 5,
+    "priority": 35,
+    "isActive": true,
+    "effectiveFrom": "2024-01-01T00:00:00+00:00",
+    "effectiveTo": null,
+    "parameters": "{\"vehicleType\":\"Truck\",\"kmPerLiter\":8.0,\"priceMultiplier\":1.5}"
+  }
+]

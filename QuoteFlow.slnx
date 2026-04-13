@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/QuoteFlow.API/QuoteFlow.API.csproj" />
+    <Project Path="src/QuoteFlow.Application/QuoteFlow.Application.csproj" />
+    <Project Path="src/QuoteFlow.Core/QuoteFlow.Core.csproj" />
+    <Project Path="src/QuoteFlow.Infrastructure/QuoteFlow.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/QuoteFlow.IntegrationTests/QuoteFlow.IntegrationTests.csproj" />
+    <Project Path="tests/QuoteFlow.UnitTests/QuoteFlow.UnitTests.csproj" />
+  </Folder>
+</Solution>

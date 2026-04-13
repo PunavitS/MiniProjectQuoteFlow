@@ -1,0 +1,6 @@
+originCode,destinationCode,weight,basePrice
+BKK,CNX,3,50
+BKK,HKT,10,100
+BKK,SGZ,5,80
+CNX,BKK,15,200
+BKK,NBI,2,30
