@@ -32,7 +32,7 @@ public class OsrmDistanceService(
 
         try
         {
-            var url = $"http://router.project-osrm.org/route/v1/driving/" +
+            var url = $"route/v1/driving/" +
                       $"{origin.Longitude},{origin.Latitude};" +
                       $"{destination.Longitude},{destination.Latitude}?overview=false";
 

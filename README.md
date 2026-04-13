@@ -1,61 +1,70 @@
 # QuoteFlow — Mini Pricing Platform
 
-A backend service that calculates service pricing (quote) based on configurable rules, built with .NET 10 and Clean Architecture.
+A backend service for calculating shipping quotes based on configurable pricing rules. Built with .NET 10 and Clean Architecture.
 
 ---
 
-## Architecture Overview
+## Architecture
 
 ```
 src/
-  QuoteFlow.Core/           # Domain models & interfaces (no dependencies)
-    ├── Pricing/            # QuoteRequest, QuoteResult, IPricingEngine
-    ├── Rules/              # PricingRule, IRuleRepository, Parameters
-    └── Jobs/               # BulkJob, BulkJobItem, IJobRepository
+  QuoteFlow.Core/             # Domain models & interfaces (no dependencies)
+    ├── Pricing/              # QuoteRequest, QuoteResult, IPricingEngine, IDistanceService
+    ├── Rules/                # PricingRule, RuleType, IRuleRepository, Parameters/
+    ├── Jobs/                 # BulkJob, BulkJobItem, IJobRepository
+    └── Locations/            # Location, Region, ILocationRepository
 
-  QuoteFlow.Application/    # Business logic (depends on Core only)
-    ├── Pricing/            # PricingService
-    ├── Rules/              # RuleService
-    └── Jobs/               # JobService
+  QuoteFlow.Application/      # Use cases (depends on Core only)
+    ├── Pricing/              # PricingService
+    ├── Rules/                # RuleService
+    ├── Jobs/                 # JobService
+    └── Locations/            # LocationService
 
-  QuoteFlow.Infrastructure/ # Implementations (depends on Core + Application)
-    ├── Pricing/            # PricingEngine
-    ├── Rules/              # InMemoryRuleRepository
-    └── Jobs/               # InMemoryJobRepository, BulkJobWorker
+  QuoteFlow.Infrastructure/   # Implementations (depends on Core + Application)
+    ├── Pricing/              # PricingEngine, OsrmDistanceService
+    ├── Rules/                # RuleRepository (in-memory)
+    ├── Jobs/                 # JobRepository, BulkJobWorker
+    └── Locations/            # LocationRepository (31 Thai locations)
 
-  QuoteFlow.API/            # HTTP layer (depends on Application + Infrastructure)
-    └── Endpoints/
-        ├── Pricing/        # POST /quotes/price, POST /quotes/bulk
-        ├── Rules/          # CRUD /rules
-        ├── Jobs/           # GET /jobs/{id}
-        └── Health/         # GET /health
+  QuoteFlow.API/              # HTTP layer (Controllers + Middleware)
+    ├── Controllers/          # Quotes, Rules, Jobs, Locations, Health
+    └── Middleware/           # GlobalExceptionHandler
 
 tests/
-  QuoteFlow.UnitTests/      # PricingEngine & RuleService tests
-  QuoteFlow.IntegrationTests/ # API endpoint tests via WebApplicationFactory
+  QuoteFlow.UnitTests/        # PricingEngine, RuleService
+  QuoteFlow.IntegrationTests/ # API endpoints via WebApplicationFactory
 ```
 
-### Pricing Flow
+### Pricing Pipeline
 
 ```
-Request (weight, origin, destination, basePrice)
-  │
-  ├── 1. WeightTier rules   → override BasePrice if weight matches
-  ├── 2. RemoteAreaSurcharge → add Surcharge if destination matches
-  └── 3. TimeWindowPromotion → apply Discount if time & day match
+POST /quotes/price
+        │
+        ├── 1. ExchangeRate      → convert request currency to THB
+        ├── 2. WeightTier        → override BasePrice by weight range
+        ├── 3. VehicleType       → multiply BasePrice by vehicle multiplier
+        ├── 4. FuelSurcharge     → add fuel cost (distance ÷ kmPerLiter × pricePerLiter)
+        ├── 5. RemoteAreaSurcharge → add flat surcharge for remote destinations
+        ├── 6. TimeWindowPromotion → apply % discount in time window
+        └── 7. ExchangeRate      → convert result back to request currency
 
-FinalPrice = BasePrice + Surcharge - Discount (minimum 0)
+FinalPrice = BasePrice + Surcharge - Discount  (minimum 0)
 ```
+
+Distance is fetched automatically from **OSRM** (free routing API) using coordinates stored per location.
 
 ---
 
 ## Rule Types
 
-| Type | Parameters | Effect |
-|---|---|---|
-| `WeightTier` | minWeight, maxWeight, price | Sets base price by weight range |
-| `RemoteAreaSurcharge` | areaCodes[], surchargeAmount | Adds flat surcharge for remote areas |
-| `TimeWindowPromotion` | startHour, endHour, daysOfWeek[], discountPercent | Applies % discount in time window |
+| ruleType | Value | Parameters | Effect |
+|----------|-------|-----------|--------|
+| `TimeWindowPromotion` | 0 | startHour, endHour, daysOfWeek[], discountPercent | % discount in time window |
+| `RemoteAreaSurcharge` | 1 | areaCodes[], surchargeAmount | Flat surcharge for remote areas |
+| `WeightTier` | 2 | minWeight, maxWeight, price | Override base price by weight |
+| `ExchangeRate` | 3 | fromCurrency, toCurrency, rate | Currency conversion |
+| `FuelSurcharge` | 4 | pricePerLiter | Fuel cost per liter (THB) |
+| `VehicleType` | 5 | vehicleType, kmPerLiter, priceMultiplier | Vehicle efficiency & price factor |
 
 Rules have: `priority` (lower = applied first), `effectiveFrom`, `effectiveTo`, `isActive`
 
@@ -63,13 +72,14 @@ Rules have: `priority` (lower = applied first), `effectiveFrom`, `effectiveTo`, 
 
 ## Setup & Run
 
-### With Docker (recommended)
+### Docker (recommended)
 
 ```bash
 docker-compose up --build
 ```
 
-API available at: `http://localhost:8080`
+API: `http://localhost:8080`
+API Docs: `http://localhost:8080/scalar/v1`
 
 ### Local Development
 
@@ -77,7 +87,12 @@ API available at: `http://localhost:8080`
 dotnet run --project src/QuoteFlow.API
 ```
 
-API available at: `https://localhost:7xxx` (see launchSettings.json)
+### Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `ASPNETCORE_ENVIRONMENT` | `Production` | Runtime environment |
+| `Osrm__BaseUrl` | `http://router.project-osrm.org` | OSRM routing API base URL |
 
 ### Run Tests
 
@@ -87,30 +102,29 @@ dotnet test
 
 ---
 
-## API Documentation
-
-OpenAPI/Swagger available at: `http://localhost:8080/openapi/v1.json`
-
-### Endpoints
+## API Endpoints
 
 | Method | Path | Description |
-|---|---|---|
-| GET | /health | System health check |
+|--------|------|-------------|
+| GET | /health | Health check |
 | POST | /quotes/price | Calculate price immediately |
-| POST | /quotes/bulk | Submit JSON list, get job_id |
-| POST | /quotes/bulk/csv | Upload CSV file, get job_id |
-| GET | /jobs/{job_id} | Track job status & results |
+| POST | /quotes/bulk | Submit JSON list → returns jobId |
+| POST | /quotes/bulk/csv | Upload CSV file → returns jobId |
+| GET | /jobs/{id} | Track job status & results |
 | GET | /rules | List all pricing rules |
-| GET | /rules/{id} | Get rule by ID |
 | POST | /rules | Create new rule |
 | PUT | /rules/{id} | Update rule |
 | DELETE | /rules/{id} | Delete rule |
+| GET | /locations | List all locations |
+| GET | /locations/{code} | Get location by code |
+
+Full interactive docs: `http://localhost:8080/scalar/v1`
 
 ---
 
 ## Sample Requests
 
-### Calculate price immediately
+### Calculate price (with vehicle & currency)
 
 ```bash
 curl -X POST http://localhost:8080/quotes/price \
@@ -118,8 +132,10 @@ curl -X POST http://localhost:8080/quotes/price \
   -d '{
     "originCode": "BKK",
     "destinationCode": "CNX",
-    "weight": 3.0,
-    "basePrice": 100
+    "weight": 5.0,
+    "basePrice": 100,
+    "vehicleType": "Truck",
+    "currency": "THB"
   }'
 ```
 
@@ -128,59 +144,58 @@ Response:
 {
   "originCode": "BKK",
   "destinationCode": "CNX",
-  "weight": 3.0,
+  "weight": 5.0,
   "inputBasePrice": 100,
-  "basePrice": 100,
-  "surcharge": 50,
-  "discount": 0,
-  "finalPrice": 150,
-  "appliedRules": ["Standard Weight Tier 0-5kg", "Remote Area Surcharge - North"],
-  "calculatedAt": "2024-01-01T10:00:00+00:00"
+  "basePrice": 150,
+  "surcharge": 3517.63,
+  "discount": 733.53,
+  "finalPrice": 2934.10,
+  "currency": "THB",
+  "appliedRules": [
+    "Standard Weight Tier 0-5kg",
+    "Vehicle: Truck",
+    "Fuel Price (685km × 40.50฿/L ÷ 8km/L)",
+    "Remote Area Surcharge - North",
+    "Flash Sale Friday Morning"
+  ],
+  "calculatedAt": "2026-04-11T09:00:00Z"
 }
 ```
 
-### Bulk submission (JSON)
+### Bulk (JSON)
 
 ```bash
 curl -X POST http://localhost:8080/quotes/bulk \
   -H "Content-Type: application/json" \
-  -d '[
-    {"originCode": "BKK", "destinationCode": "CNX", "weight": 3.0, "basePrice": 100},
-    {"originCode": "BKK", "destinationCode": "HKT", "weight": 7.5, "basePrice": 180}
-  ]'
+  -d @sample-data/bulk-quotes.csv
 ```
 
-Response:
-```json
-{ "jobId": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" }
-```
-
-### Bulk submission (CSV)
+### Bulk (CSV)
 
 ```bash
 curl -X POST http://localhost:8080/quotes/bulk/csv \
-  -F "file=@sample-data/bulk_quotes.csv"
+  -F "file=@sample-data/bulk-quotes.csv"
 ```
 
-### Track job status
-
-```bash
-curl http://localhost:8080/jobs/{job_id}
+CSV format:
+```
+originCode,destinationCode,weight,basePrice
+BKK,CNX,3,50
+BKK,HKT,10,100
 ```
 
-### Create a pricing rule
+### Update fuel price
 
 ```bash
-curl -X POST http://localhost:8080/rules \
+curl -X PUT http://localhost:8080/rules/22222222-0000-0000-0000-000000000001 \
   -H "Content-Type: application/json" \
   -d '{
-    "name": "Weekend Promotion",
-    "ruleType": "TimeWindowPromotion",
-    "priority": 30,
+    "name": "Fuel Price (THB/Liter)",
+    "ruleType": 4,
+    "priority": 40,
     "isActive": true,
-    "effectiveFrom": "2024-01-01T00:00:00+00:00",
-    "effectiveTo": null,
-    "parameters": "{\"startHour\":0,\"endHour\":23,\"daysOfWeek\":[0,6],\"discountPercent\":15}"
+    "effectiveFrom": "2024-01-01T00:00:00Z",
+    "parameters": "{\"pricePerLiter\":42.50}"
   }'
 ```
 
@@ -188,24 +203,49 @@ curl -X POST http://localhost:8080/rules \
 
 ## Default Seed Data
 
-The system starts with pre-loaded rules:
+### Weight Tiers
 
-| Rule | Type | Detail |
-|---|---|---|
-| Weight Tier 0-5kg | WeightTier | 100 THB |
-| Weight Tier 5-15kg | WeightTier | 180 THB |
-| Weight Tier 15-30kg | WeightTier | 300 THB |
-| Remote North (CNX, LPG, PYY) | RemoteAreaSurcharge | +50 THB |
-| Remote South (SGZ, NWT, PTN) | RemoteAreaSurcharge | +60 THB |
-| Flash Sale Friday 8:00-12:00 | TimeWindowPromotion | -20% |
+| Rule | Weight | Price |
+|------|--------|-------|
+| Standard 0-5kg | 0–5 kg | 100 THB |
+| Standard 5-15kg | 5–15 kg | 180 THB |
+| Standard 15-30kg | 15–30 kg | 300 THB |
+
+### Surcharges
+
+| Rule | Area Codes | Amount |
+|------|-----------|--------|
+| Remote North | CNX, LPG, PYY | +50 THB |
+| Remote South | SGZ, NWT, PTN | +60 THB |
+
+### Promotions
+
+| Rule | Condition | Discount |
+|------|-----------|---------|
+| Flash Sale Friday | Fri 08:00–12:00 | -20% |
+
+### Vehicle Types
+
+| Vehicle | km/L | Multiplier |
+|---------|------|-----------|
+| Motorcycle | 35 | 0.8× |
+| Car | 14 | 1.0× |
+| Van | 10 | 1.2× |
+| Truck | 8 | 1.5× |
+
+### Exchange Rates (THB base)
+
+USD, EUR, SGD, JPY ↔ THB (update via `PUT /rules/{id}`)
 
 ---
 
 ## Tech Stack
 
-- .NET 10 / ASP.NET Core Minimal APIs
-- In-memory storage (ConcurrentDictionary)
-- Background worker (IHostedService + Channel)
-- OpenAPI built-in
-- xUnit + NSubstitute + FluentAssertions
-- Docker + docker-compose
+- **Runtime**: .NET 10 / ASP.NET Core
+- **Architecture**: Clean Architecture + Modular Monolith
+- **Storage**: In-memory (ConcurrentDictionary)
+- **Background Processing**: IHostedService + System.Threading.Channels
+- **Distance API**: OSRM (free, no API key required)
+- **API Docs**: Scalar (OpenAPI)
+- **Testing**: xUnit + NSubstitute + FluentAssertions (29 tests)
+- **Container**: Docker + docker-compose

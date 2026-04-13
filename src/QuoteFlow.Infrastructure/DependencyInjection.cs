@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using QuoteFlow.Core.Jobs;
 using QuoteFlow.Core.Locations;
@@ -20,7 +21,12 @@ public static class DependencyInjection
         services.AddSingleton<IPricingEngine, PricingEngine>();
         services.AddSingleton<BulkJobWorker>();
         services.AddHostedService(sp => sp.GetRequiredService<BulkJobWorker>());
-        services.AddHttpClient<IDistanceService, OsrmDistanceService>();
+        services.AddHttpClient<IDistanceService, OsrmDistanceService>((sp, client) =>
+        {
+            var config = sp.GetRequiredService<IConfiguration>();
+            var baseUrl = config["Osrm:BaseUrl"] ?? "http://router.project-osrm.org";
+            client.BaseAddress = new Uri(baseUrl);
+        });
         return services;
     }
 }
