@@ -26,6 +26,12 @@ public static class DependencyInjection
             var config = sp.GetRequiredService<IConfiguration>();
             var baseUrl = config["Osrm:BaseUrl"] ?? "http://router.project-osrm.org";
             client.BaseAddress = new Uri(baseUrl);
+            client.Timeout = TimeSpan.FromSeconds(10);
+        })
+        .AddStandardResilienceHandler(options =>
+        {
+            options.Retry.MaxRetryAttempts = 3;
+            options.Retry.Delay = TimeSpan.FromMilliseconds(500);
         });
         return services;
     }
