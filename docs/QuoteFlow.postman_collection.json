@@ -1,0 +1,200 @@
+{
+  "info": {
+    "name": "QuoteFlow API",
+    "description": "Mini Pricing Platform — QuoteFlow",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "GET /health",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/health"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Quotes",
+      "item": [
+        {
+          "name": "Calculate price (THB, Truck)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/quotes/price",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"originCode\": \"BKK\",\n  \"destinationCode\": \"CNX\",\n  \"weight\": 5.0,\n  \"basePrice\": 100,\n  \"vehicleType\": \"Truck\",\n  \"currency\": \"THB\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Calculate price (USD)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/quotes/price",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"originCode\": \"BKK\",\n  \"destinationCode\": \"BKK\",\n  \"weight\": 3.0,\n  \"basePrice\": 10,\n  \"currency\": \"USD\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Calculate price (no vehicle)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/quotes/price",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"originCode\": \"BKK\",\n  \"destinationCode\": \"CNX\",\n  \"weight\": 3.0,\n  \"basePrice\": 100\n}"
+            }
+          }
+        },
+        {
+          "name": "Submit bulk (JSON)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/quotes/bulk",
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  { \"originCode\": \"BKK\", \"destinationCode\": \"CNX\", \"weight\": 3, \"basePrice\": 50 },\n  { \"originCode\": \"BKK\", \"destinationCode\": \"HKT\", \"weight\": 10, \"basePrice\": 100 }\n]"
+            }
+          }
+        },
+        {
+          "name": "Submit bulk (CSV)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/quotes/bulk/csv",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "file", "type": "file", "src": "../sample-data/bulk-quotes.csv" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jobs",
+      "item": [
+        {
+          "name": "GET /jobs/{id}",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/jobs/{{jobId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Rules",
+      "item": [
+        {
+          "name": "GET /rules",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/rules"
+          }
+        },
+        {
+          "name": "Create WeightTier rule",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/rules",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Heavy 30-50kg\",\n  \"ruleType\": 2,\n  \"priority\": 13,\n  \"isActive\": true,\n  \"effectiveFrom\": \"2026-01-01T00:00:00Z\",\n  \"parameters\": \"{\\\"minWeight\\\":30.01,\\\"maxWeight\\\":50,\\\"price\\\":500}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Create RemoteAreaSurcharge rule",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/rules",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Remote East\",\n  \"ruleType\": 1,\n  \"priority\": 22,\n  \"isActive\": true,\n  \"effectiveFrom\": \"2026-01-01T00:00:00Z\",\n  \"parameters\": \"{\\\"areaCodes\\\":[\\\"UBP\\\",\\\"MDH\\\"],\\\"surchargeAmount\\\":70}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Create TimeWindowPromotion rule",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/rules",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Monday Morning Deal\",\n  \"ruleType\": 0,\n  \"priority\": 31,\n  \"isActive\": true,\n  \"effectiveFrom\": \"2026-01-01T00:00:00Z\",\n  \"parameters\": \"{\\\"startHour\\\":9,\\\"endHour\\\":11,\\\"daysOfWeek\\\":[1],\\\"discountPercent\\\":15}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Update fuel price",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/rules/22222222-0000-0000-0000-000000000001",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Fuel Price (THB/Liter)\",\n  \"ruleType\": 4,\n  \"priority\": 40,\n  \"isActive\": true,\n  \"effectiveFrom\": \"2024-01-01T00:00:00Z\",\n  \"parameters\": \"{\\\"pricePerLiter\\\":42.50}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Disable rule",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/rules/{{ruleId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Flash Sale Friday Morning\",\n  \"ruleType\": 0,\n  \"priority\": 30,\n  \"isActive\": false,\n  \"effectiveFrom\": \"2024-01-01T00:00:00Z\",\n  \"parameters\": \"{\\\"startHour\\\":8,\\\"endHour\\\":12,\\\"daysOfWeek\\\":[5],\\\"discountPercent\\\":20}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE /rules/{id}",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/rules/{{ruleId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Locations",
+      "item": [
+        {
+          "name": "GET /locations",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/locations"
+          }
+        },
+        {
+          "name": "GET /locations/CNX",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/locations/CNX"
+          }
+        }
+      ]
+    }
+  ]
+}
