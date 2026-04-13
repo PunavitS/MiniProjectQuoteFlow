@@ -10,6 +10,8 @@ namespace QuoteFlow.API.Controllers;
 public class RulesController(IRuleService ruleService) : ControllerBase
 {
     [HttpGet]
+    [EndpointSummary("List all rules")]
+    [EndpointDescription("Returns all pricing rules ordered by priority.")]
     [ProducesResponseType<IEnumerable<PricingRule>>(StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAll()
     {
@@ -18,6 +20,7 @@ public class RulesController(IRuleService ruleService) : ControllerBase
     }
 
     [HttpGet("{id:guid}")]
+    [EndpointSummary("Get rule by ID")]
     [ProducesResponseType<PricingRule>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById(Guid id)
@@ -27,6 +30,8 @@ public class RulesController(IRuleService ruleService) : ControllerBase
     }
 
     [HttpPost]
+    [EndpointSummary("Create rule")]
+    [EndpointDescription("Create a new pricing rule. ruleType: 0=TimeWindowPromotion, 1=RemoteAreaSurcharge, 2=WeightTier, 3=ExchangeRate, 4=FuelSurcharge, 5=VehicleType")]
     [ProducesResponseType<PricingRule>(StatusCodes.Status201Created)]
     public async Task<IActionResult> Create([FromBody] PricingRule rule)
     {
@@ -35,6 +40,8 @@ public class RulesController(IRuleService ruleService) : ControllerBase
     }
 
     [HttpPut("{id:guid}")]
+    [EndpointSummary("Update rule")]
+    [EndpointDescription("Update an existing rule. Use isActive=false to disable without deleting.")]
     [ProducesResponseType<PricingRule>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Update(Guid id, [FromBody] PricingRule rule)
@@ -44,6 +51,7 @@ public class RulesController(IRuleService ruleService) : ControllerBase
     }
 
     [HttpDelete("{id:guid}")]
+    [EndpointSummary("Delete rule")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(Guid id)

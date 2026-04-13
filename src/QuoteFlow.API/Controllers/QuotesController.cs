@@ -15,6 +15,8 @@ public class QuotesController(
     BulkJobWorker worker) : ControllerBase
 {
     [HttpPost("price")]
+    [EndpointSummary("Calculate price")]
+    [EndpointDescription("Calculate shipping quote immediately. Supports currency conversion, vehicle type, and fuel surcharge via active rules.")]
     [ProducesResponseType<QuoteResult>(StatusCodes.Status200OK)]
     public async Task<IActionResult> CalculatePrice([FromBody] QuoteRequest request)
     {
@@ -23,6 +25,8 @@ public class QuotesController(
     }
 
     [HttpPost("bulk")]
+    [EndpointSummary("Submit bulk quotes (JSON)")]
+    [EndpointDescription("Submit a list of quote requests for background processing. Returns a jobId to track progress.")]
     [ProducesResponseType(StatusCodes.Status202Accepted)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> SubmitBulk([FromBody] List<QuoteRequest> requests)
@@ -37,6 +41,8 @@ public class QuotesController(
     }
 
     [HttpPost("bulk/csv")]
+    [EndpointSummary("Submit bulk quotes (CSV)")]
+    [EndpointDescription("Upload a CSV file (originCode,destinationCode,weight,basePrice) for background processing.")]
     [ProducesResponseType(StatusCodes.Status202Accepted)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> SubmitBulkCsv(IFormFile file)
