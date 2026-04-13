@@ -11,7 +11,7 @@ RUN dotnet restore src/QuoteFlow.API/QuoteFlow.API.csproj
 
 COPY src/ src/
 
-RUN dotnet publish src/QuoteFlow.API/QuoteFlow.API.csproj -c Release -o /app/publish --no-restore
+RUN dotnet publish src/QuoteFlow.API/QuoteFlow.API.csproj -c Release -o /app/publish
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
