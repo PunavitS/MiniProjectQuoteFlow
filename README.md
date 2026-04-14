@@ -245,7 +245,7 @@ docker-compose up --build
 ```
 
 - API: `http://localhost:8080`
-- API Docs: `http://localhost:8080/scalar/v1`
+- Swagger UI: `http://localhost:8080/swagger`
 
 ### Local Development
 
@@ -286,7 +286,7 @@ dotnet test
 | GET | /locations | ดู 77 จังหวัด |
 | GET | /locations/{code} | ดู location ตามรหัส |
 
-Full interactive docs: `http://localhost:8080/scalar/v1`
+Full interactive docs (Swagger UI): `http://localhost:8080/swagger`
 
 ---
 
@@ -492,7 +492,7 @@ FuelPriceSyncWorker (Background Service)
 | Background Processing | IHostedService + Channels |
 | Distance API | OSRM (free, no API key) |
 | Fuel Price | Configurable external API |
-| API Docs | Scalar (OpenAPI) |
+| API Docs | Swagger UI (OpenAPI) |
 | Logging | Serilog |
 | Testing | xUnit + NSubstitute + FluentAssertions (29 tests) |
 | Container | Docker + docker-compose |

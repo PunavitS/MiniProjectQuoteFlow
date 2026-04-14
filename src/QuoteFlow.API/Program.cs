@@ -1,7 +1,6 @@
 using QuoteFlow.API.Middleware;
 using QuoteFlow.Application;
 using QuoteFlow.Infrastructure;
-using Scalar.AspNetCore;
 using Serilog;
 using Microsoft.AspNetCore.RateLimiting;
 using System.Threading.RateLimiting;
@@ -15,12 +14,16 @@ builder.Host.UseSerilog((ctx, config) => config
     .WriteTo.Console(outputTemplate:
         "[{Timestamp:HH:mm:ss} {Level:u3}] {CorrelationId} {SourceContext} {Message:lj}{NewLine}{Exception}"));
 
-builder.Services.AddOpenApi();
 builder.Services.AddControllers();
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new() { Title = "QuoteFlow API", Version = "v1" });
+});
 
 builder.Services.AddRateLimiter(options =>
 {
@@ -47,11 +50,11 @@ app.UseSerilogRequestLogging(options =>
 });
 app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseRateLimiter();
-app.MapOpenApi();
-app.MapScalarApiReference(options =>
+app.UseSwagger();
+app.UseSwaggerUI(options =>
 {
-    options.Title = "QuoteFlow API";
-    options.Theme = ScalarTheme.Purple;
+    options.SwaggerEndpoint("/swagger/v1/swagger.json", "QuoteFlow API v1");
+    options.RoutePrefix = "swagger";
 });
 app.UseHttpsRedirection();
 app.MapControllers().RequireRateLimiting("fixed");
