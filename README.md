@@ -1,6 +1,7 @@
 # QuoteFlow — Mini Pricing Platform
 
-A backend service for calculating shipping quotes based on configurable pricing rules. Built with .NET 10 and Clean Architecture.
+ระบบคำนวณราคาค่าจัดส่งพัสดุ รองรับกฎราคาที่ปรับแต่งได้ พร้อม bulk processing
+สร้างด้วย .NET 10 และ Clean Architecture
 
 ---
 
@@ -8,65 +9,230 @@ A backend service for calculating shipping quotes based on configurable pricing 
 
 ```
 src/
-  QuoteFlow.Core/             # Domain models & interfaces (no dependencies)
-    ├── Pricing/              # QuoteRequest, QuoteResult, IPricingEngine, IDistanceService
-    ├── Rules/                # PricingRule, RuleType, IRuleRepository, Parameters/
-    ├── Jobs/                 # BulkJob, BulkJobItem, IJobRepository
-    └── Locations/            # Location, Region, ILocationRepository
+  QuoteFlow.Core/               # Domain models & interfaces
+    ├── Pricing/                # QuoteRequest, QuoteResult, IPricingEngine
+    ├── Rules/                  # PricingRule, RuleType, Parameters/
+    ├── Jobs/                   # BulkJob, BulkJobItem
+    └── Locations/              # Location, Region
 
-  QuoteFlow.Application/      # Use cases (depends on Core only)
-    ├── Pricing/              # PricingService
-    ├── Rules/                # RuleService
-    ├── Jobs/                 # JobService
-    └── Locations/            # LocationService
+  QuoteFlow.Application/        # Use cases (depends on Core only)
+    ├── Pricing/                # PricingService, IPricingService
+    ├── Rules/                  # RuleService
+    ├── Jobs/                   # JobService
+    └── Locations/              # LocationService
 
-  QuoteFlow.Infrastructure/   # Implementations (depends on Core + Application)
-    ├── Pricing/              # PricingEngine, OsrmDistanceService
-    ├── Rules/                # RuleRepository (in-memory)
-    ├── Jobs/                 # JobRepository, BulkJobWorker
-    └── Locations/            # LocationRepository (31 Thai locations)
+  QuoteFlow.Infrastructure/     # Implementations
+    ├── Pricing/                # PricingEngine, OsrmDistanceService,
+    │                           # ExternalFuelPriceService, FuelPriceSyncWorker
+    ├── Rules/                  # RuleRepository (JSON seed → in-memory)
+    ├── Jobs/                   # JobRepository, BulkJobWorker
+    ├── Locations/              # LocationRepository (JSON seed → in-memory)
+    └── Data/                   # locations.json (77 provinces), rules.json (seed)
 
-  QuoteFlow.API/              # HTTP layer (Controllers + Middleware)
-    ├── Controllers/          # Quotes, Rules, Jobs, Locations, Health
-    └── Middleware/           # GlobalExceptionHandler
+  QuoteFlow.API/                # HTTP layer
+    ├── Controllers/            # Quotes, Rules, Jobs, Locations, Health
+    └── Middleware/             # GlobalExceptionHandler, CorrelationIdMiddleware
 
 tests/
-  QuoteFlow.UnitTests/        # PricingEngine, RuleService
-  QuoteFlow.IntegrationTests/ # API endpoints via WebApplicationFactory
+  QuoteFlow.UnitTests/          # PricingEngine, RuleService (22 tests)
+  QuoteFlow.IntegrationTests/   # API endpoints via WebApplicationFactory (7 tests)
 ```
 
-### Pricing Pipeline
+---
+
+## Pricing Pipeline
+
+ทุก request ผ่าน pipeline 7 ขั้นตอนตามลำดับ priority ของ rule:
 
 ```
 POST /quotes/price
         │
-        ├── 1. ExchangeRate      → convert request currency to THB
-        ├── 2. WeightTier        → override BasePrice by weight range
-        ├── 3. VehicleType       → multiply BasePrice by vehicle multiplier
-        ├── 4. FuelSurcharge     → add fuel cost (distance ÷ kmPerLiter × pricePerLiter)
-        ├── 5. RemoteAreaSurcharge → add flat surcharge for remote destinations
-        ├── 6. TimeWindowPromotion → apply % discount in time window
-        └── 7. ExchangeRate      → convert result back to request currency
+        ├── 1. ExchangeRate        → แปลง currency เป็น THB (ถ้าไม่ใช่ THB)
+        ├── 2. WeightTier          → กำหนด basePrice ตามช่วงน้ำหนัก
+        ├── 3. VehicleType         → คูณ basePrice ด้วย multiplier ตามประเภทรถ
+        ├── 4. FuelSurcharge       → บวกค่าน้ำมัน = ระยะทาง ÷ km/L × ฿/L
+        ├── 5. RemoteAreaSurcharge → บวกค่าพื้นที่ห่างไกล
+        ├── 6. TimeWindowPromotion → หักส่วนลด % ตามวัน/เวลา
+        └── 7. ExchangeRate        → แปลงกลับเป็น currency ที่ request มา
 
-FinalPrice = BasePrice + Surcharge - Discount  (minimum 0)
+FinalPrice = BasePrice + Surcharge - Discount  (ขั้นต่ำ 0)
 ```
 
-Distance is fetched automatically from **OSRM** (free routing API) using coordinates stored per location.
+- ระยะทางดึงอัตโนมัติจาก **OSRM API** (free routing) จากพิกัดของ Location
+- ราคาน้ำมันสามารถ sync จาก external API ทุก 24 ชั่วโมงโดยอัตโนมัติ
+- **ทุก rule สามารถปิด (`isActive: false`) เพื่อข้ามการคำนวณขั้นตอนนั้นได้**
 
 ---
 
-## Rule Types
+## Rule Types (กฎราคา 6 ประเภท)
 
-| ruleType | Value | Parameters | Effect |
-|----------|-------|-----------|--------|
-| `TimeWindowPromotion` | 0 | startHour, endHour, daysOfWeek[], discountPercent | % discount in time window |
-| `RemoteAreaSurcharge` | 1 | areaCodes[], surchargeAmount | Flat surcharge for remote areas |
-| `WeightTier` | 2 | minWeight, maxWeight, price | Override base price by weight |
-| `ExchangeRate` | 3 | fromCurrency, toCurrency, rate | Currency conversion |
-| `FuelSurcharge` | 4 | pricePerLiter | Fuel cost per liter (THB) |
-| `VehicleType` | 5 | vehicleType, kmPerLiter, priceMultiplier | Vehicle efficiency & price factor |
+ทุก rule มี field ร่วม:
+- `priority` — ลำดับความสำคัญ (ยิ่งน้อยยิ่งทำก่อน)
+- `isActive` — เปิด/ปิด rule (`false` = ข้ามการคำนวณนี้)
+- `effectiveFrom` / `effectiveTo` — ช่วงเวลาที่ rule มีผล
 
-Rules have: `priority` (lower = applied first), `effectiveFrom`, `effectiveTo`, `isActive`
+### 1. WeightTier (ruleType = 2)
+
+กำหนด basePrice ตามช่วงน้ำหนัก ถ้าน้ำหนักตรงกับช่วงไหนจะ **แทนที่** basePrice
+
+```json
+{
+  "name": "Standard Weight Tier 0-5kg",
+  "ruleType": 2,
+  "priority": 10,
+  "isActive": true,
+  "effectiveFrom": "2024-01-01T00:00:00Z",
+  "parameters": "{\"minWeight\":0,\"maxWeight\":5,\"price\":100}"
+}
+```
+
+**Seed data:**
+
+| Rule | น้ำหนัก | ราคา (THB) |
+|------|---------|-----------|
+| Standard 0-5kg | 0 – 5 kg | 100 |
+| Standard 5-15kg | 5.01 – 15 kg | 180 |
+| Standard 15-30kg | 15.01 – 30 kg | 300 |
+
+### 2. RemoteAreaSurcharge (ruleType = 1)
+
+บวกค่าเพิ่มเมื่อ **ปลายทาง** อยู่ในพื้นที่ห่างไกล
+
+```json
+{
+  "name": "Remote Area Surcharge - North",
+  "ruleType": 1,
+  "priority": 20,
+  "isActive": true,
+  "effectiveFrom": "2024-01-01T00:00:00Z",
+  "parameters": "{\"areaCodes\":[\"CNX\",\"LPG\",\"PYY\",\"NAN\",\"PYO\",\"CMR\"],\"surchargeAmount\":50}"
+}
+```
+
+**Seed data:**
+
+| Rule | พื้นที่ | ค่าเพิ่ม (THB) |
+|------|--------|---------------|
+| Remote North | CNX, LPG, PYY, NAN, PYO, CMR | +50 |
+| Remote Northeast | MDH, LEI, BKN, NKP | +55 |
+| Remote South | STN, YLA, PTN, NWT | +60 |
+| Remote West | TAK, TRT | +45 |
+
+### 3. TimeWindowPromotion (ruleType = 0)
+
+ให้ส่วนลด % เมื่อ request อยู่ในช่วงวัน/เวลาที่กำหนด
+
+```json
+{
+  "name": "Flash Sale Friday Morning",
+  "ruleType": 0,
+  "priority": 30,
+  "isActive": true,
+  "effectiveFrom": "2024-01-01T00:00:00Z",
+  "parameters": "{\"startHour\":8,\"endHour\":12,\"daysOfWeek\":[5],\"discountPercent\":20}"
+}
+```
+
+> `daysOfWeek`: 0=Sunday, 1=Monday, ..., 5=Friday, 6=Saturday
+
+**Seed data:**
+
+| Rule | เงื่อนไข | ส่วนลด |
+|------|---------|--------|
+| Flash Sale Friday Morning | ศุกร์ 08:00–12:00 | -20% |
+
+### 4. ExchangeRate (ruleType = 3)
+
+แปลงสกุลเงิน — ใช้ตอนเริ่มต้น (แปลงเข้า THB) และตอนจบ (แปลงกลับ)
+
+```json
+{
+  "name": "USD → THB",
+  "ruleType": 3,
+  "priority": 1,
+  "isActive": true,
+  "effectiveFrom": "2024-01-01T00:00:00Z",
+  "parameters": "{\"fromCurrency\":\"USD\",\"toCurrency\":\"THB\",\"rate\":36.00}"
+}
+```
+
+**Seed data:**
+
+| คู่สกุลเงิน | Rate |
+|------------|------|
+| USD → THB | 36.00 |
+| THB → USD | 0.0278 |
+| EUR → THB | 38.50 |
+| THB → EUR | 0.0260 |
+| SGD → THB | 26.50 |
+| THB → SGD | 0.0377 |
+| JPY → THB | 0.240 |
+| THB → JPY | 4.170 |
+
+> ปิด ExchangeRate rule ทั้งหมด → ระบบคำนวณเป็น THB ตลอด
+
+### 5. FuelSurcharge (ruleType = 4)
+
+บวกค่าน้ำมัน คำนวณจาก: `ระยะทาง ÷ km/L × ราคาน้ำมัน/L`
+
+```json
+{
+  "name": "Fuel Price (THB/Liter)",
+  "ruleType": 4,
+  "priority": 40,
+  "isActive": true,
+  "effectiveFrom": "2024-01-01T00:00:00Z",
+  "parameters": "{\"pricePerLiter\":40.50}"
+}
+```
+
+**Seed data:** 40.50 THB/ลิตร
+
+- อัปเดตราคาน้ำมันผ่าน `PUT /rules/22222222-0000-0000-0000-000000000001`
+- หรือตั้งค่า `FuelPrice:ApiUrl` เพื่อ sync จาก external API ทุก 24 ชั่วโมงอัตโนมัติ
+- **ปิด rule นี้ → ข้ามการคำนวณค่าน้ำมันทั้งหมด**
+
+### 6. VehicleType (ruleType = 5)
+
+กำหนด price multiplier และ fuel efficiency ตามประเภทรถ
+
+```json
+{
+  "name": "Vehicle: Truck",
+  "ruleType": 5,
+  "priority": 35,
+  "isActive": true,
+  "effectiveFrom": "2024-01-01T00:00:00Z",
+  "parameters": "{\"vehicleType\":\"Truck\",\"kmPerLiter\":8.0,\"priceMultiplier\":1.5}"
+}
+```
+
+**Seed data:**
+
+| ประเภทรถ | km/L | Multiplier | ผล |
+|---------|------|-----------|-----|
+| Motorcycle | 35 | 0.8x | ราคาถูกลง ประหยัดน้ำมัน |
+| Car | 14 | 1.0x | ราคาปกติ |
+| Van | 10 | 1.2x | ราคาสูงขึ้นเล็กน้อย |
+| Truck | 8 | 1.5x | ราคาสูงสุด กินน้ำมันมาก |
+
+---
+
+## การเปิด/ปิด Rule
+
+ทุก rule สามารถปิดการคำนวณได้ 2 วิธี:
+
+**วิธีที่ 1: ปิดทันที**
+```bash
+curl -X PUT http://localhost:8080/rules/{id} \
+  -H "Content-Type: application/json" \
+  -d '{ ..., "isActive": false }'
+```
+
+**วิธีที่ 2: ตั้งวันหมดอายุ**
+```json
+{ "effectiveTo": "2026-04-30T23:59:59Z" }
+```
 
 ---
 
@@ -78,8 +244,8 @@ Rules have: `priority` (lower = applied first), `effectiveFrom`, `effectiveTo`, 
 docker-compose up --build
 ```
 
-API: `http://localhost:8080`
-API Docs: `http://localhost:8080/scalar/v1`
+- API: `http://localhost:8080`
+- API Docs: `http://localhost:8080/scalar/v1`
 
 ### Local Development
 
@@ -87,18 +253,19 @@ API Docs: `http://localhost:8080/scalar/v1`
 dotnet run --project src/QuoteFlow.API
 ```
 
-### Environment Variables
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `ASPNETCORE_ENVIRONMENT` | `Production` | Runtime environment |
-| `Osrm__BaseUrl` | `http://router.project-osrm.org` | OSRM routing API base URL |
-
 ### Run Tests
 
 ```bash
 dotnet test
 ```
+
+### Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `ASPNETCORE_ENVIRONMENT` | `Production` | Runtime environment |
+| `Osrm__BaseUrl` | `http://router.project-osrm.org` | OSRM routing API |
+| `FuelPrice__ApiUrl` | (empty) | External fuel price API URL |
 
 ---
 
@@ -107,24 +274,25 @@ dotnet test
 | Method | Path | Description |
 |--------|------|-------------|
 | GET | /health | Health check |
-| POST | /quotes/price | Calculate price immediately |
-| POST | /quotes/bulk | Submit JSON list → returns jobId |
-| POST | /quotes/bulk/csv | Upload CSV file → returns jobId |
-| GET | /jobs/{id} | Track job status & results |
-| GET | /rules | List all pricing rules |
-| POST | /rules | Create new rule |
-| PUT | /rules/{id} | Update rule |
-| DELETE | /rules/{id} | Delete rule |
-| GET | /locations | List all locations |
-| GET | /locations/{code} | Get location by code |
+| POST | /quotes/price | คำนวณราคาทันที |
+| POST | /quotes/bulk | ส่ง JSON list → returns jobId |
+| POST | /quotes/bulk/csv | อัปโหลด CSV → returns jobId |
+| GET | /jobs/{id} | ติดตามสถานะ bulk job |
+| GET | /rules | ดู rules ทั้งหมด |
+| GET | /rules/{id} | ดู rule ตาม ID |
+| POST | /rules | สร้าง rule ใหม่ |
+| PUT | /rules/{id} | แก้ไข/ปิด rule |
+| DELETE | /rules/{id} | ลบ rule |
+| GET | /locations | ดู 77 จังหวัด |
+| GET | /locations/{code} | ดู location ตามรหัส |
 
 Full interactive docs: `http://localhost:8080/scalar/v1`
 
 ---
 
-## Sample Requests
+## ตัวอย่างการใช้งาน
 
-### Calculate price (with vehicle & currency)
+### 1. คำนวณราคา — กรุงเทพ → เชียงใหม่ ด้วยรถ Truck
 
 ```bash
 curl -X POST http://localhost:8080/quotes/price \
@@ -147,44 +315,64 @@ Response:
   "weight": 5.0,
   "inputBasePrice": 100,
   "basePrice": 150,
-  "surcharge": 3517.63,
-  "discount": 733.53,
-  "finalPrice": 2934.10,
+  "surcharge": 3567.63,
+  "discount": 743.53,
+  "finalPrice": 2974.10,
   "currency": "THB",
   "appliedRules": [
     "Standard Weight Tier 0-5kg",
     "Vehicle: Truck",
-    "Fuel Price (685km × 40.50฿/L ÷ 8km/L)",
+    "Fuel Price (696km × 40.50฿/L ÷ 8km/L)",
     "Remote Area Surcharge - North",
     "Flash Sale Friday Morning"
   ],
-  "calculatedAt": "2026-04-11T09:00:00Z"
+  "calculatedAt": "2026-04-14T09:00:00Z"
 }
 ```
 
-### Bulk (JSON)
+### 2. คำนวณราคา — สกุลเงิน USD
 
 ```bash
-curl -X POST http://localhost:8080/quotes/bulk \
+curl -X POST http://localhost:8080/quotes/price \
   -H "Content-Type: application/json" \
-  -d @sample-data/bulk-quotes.csv
+  -d '{
+    "originCode": "BKK",
+    "destinationCode": "BKK",
+    "weight": 3.0,
+    "basePrice": 10,
+    "currency": "USD"
+  }'
 ```
 
-### Bulk (CSV)
+### 3. คำนวณราคา — ไม่ระบุรถ (ไม่คิดค่าน้ำมัน)
 
 ```bash
-curl -X POST http://localhost:8080/quotes/bulk/csv \
-  -F "file=@sample-data/bulk-quotes.csv"
+curl -X POST http://localhost:8080/quotes/price \
+  -H "Content-Type: application/json" \
+  -d '{
+    "originCode": "BKK",
+    "destinationCode": "HKT",
+    "weight": 8.0,
+    "basePrice": 100
+  }'
 ```
 
-CSV format:
-```
-originCode,destinationCode,weight,basePrice
-BKK,CNX,3,50
-BKK,HKT,10,100
+### 4. สร้าง rule ใหม่ — WeightTier 30-50kg
+
+```bash
+curl -X POST http://localhost:8080/rules \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Heavy 30-50kg",
+    "ruleType": 2,
+    "priority": 13,
+    "isActive": true,
+    "effectiveFrom": "2026-01-01T00:00:00Z",
+    "parameters": "{\"minWeight\":30.01,\"maxWeight\":50,\"price\":500}"
+  }'
 ```
 
-### Update fuel price
+### 5. อัปเดตราคาน้ำมัน
 
 ```bash
 curl -X PUT http://localhost:8080/rules/22222222-0000-0000-0000-000000000001 \
@@ -199,53 +387,113 @@ curl -X PUT http://localhost:8080/rules/22222222-0000-0000-0000-000000000001 \
   }'
 ```
 
+### 6. ปิด rule (ไม่คำนวณค่าน้ำมัน)
+
+```bash
+curl -X PUT http://localhost:8080/rules/22222222-0000-0000-0000-000000000001 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Fuel Price (THB/Liter)",
+    "ruleType": 4,
+    "priority": 40,
+    "isActive": false,
+    "effectiveFrom": "2024-01-01T00:00:00Z",
+    "parameters": "{\"pricePerLiter\":40.50}"
+  }'
+```
+
+### 7. Bulk quotes — JSON
+
+```bash
+curl -X POST http://localhost:8080/quotes/bulk \
+  -H "Content-Type: application/json" \
+  -d '[
+    { "originCode": "BKK", "destinationCode": "CNX", "weight": 3, "basePrice": 50 },
+    { "originCode": "BKK", "destinationCode": "HKT", "weight": 10, "basePrice": 100 }
+  ]'
+```
+
+### 8. Bulk quotes — CSV
+
+```bash
+curl -X POST http://localhost:8080/quotes/bulk/csv \
+  -F "file=@sample-data/bulk-quotes.csv"
+```
+
+### 9. ติดตาม bulk job
+
+```bash
+curl http://localhost:8080/jobs/{jobId}
+```
+
+### 10. ดูรหัสจังหวัด
+
+```bash
+curl http://localhost:8080/locations
+curl http://localhost:8080/locations/CNX
+```
+
 ---
 
-## Default Seed Data
+## Data Storage
 
-### Weight Tiers
+ข้อมูลเก็บในรูปแบบ **JSON seed → in-memory**:
 
-| Rule | Weight | Price |
-|------|--------|-------|
-| Standard 0-5kg | 0–5 kg | 100 THB |
-| Standard 5-15kg | 5–15 kg | 180 THB |
-| Standard 15-30kg | 15–30 kg | 300 THB |
+```
+startup
+  ├── Data/locations.json  → โหลด 77 จังหวัด เข้า ConcurrentDictionary
+  └── Data/rules.json      → โหลด 21 rules เข้า ConcurrentDictionary
 
-### Surcharges
+CRUD (Rules)
+  ├── POST/PUT/DELETE → แก้ใน memory ทันที
+  └── restart → โหลด JSON seed ใหม่ (กลับสู่ค่าเริ่มต้น)
+```
 
-| Rule | Area Codes | Amount |
-|------|-----------|--------|
-| Remote North | CNX, LPG, PYY | +50 THB |
-| Remote South | SGZ, NWT, PTN | +60 THB |
+JSON files ถูก embed เป็น `EmbeddedResource` ใน DLL — ทำงานได้ทุกที่โดยไม่ต้อง copy ไฟล์
 
-### Promotions
+---
 
-| Rule | Condition | Discount |
-|------|-----------|---------|
-| Flash Sale Friday | Fri 08:00–12:00 | -20% |
+## Fuel Price Sync
 
-### Vehicle Types
+ระบบรองรับ sync ราคาน้ำมันจาก external API อัตโนมัติ:
 
-| Vehicle | km/L | Multiplier |
-|---------|------|-----------|
-| Motorcycle | 35 | 0.8× |
-| Car | 14 | 1.0× |
-| Van | 10 | 1.2× |
-| Truck | 8 | 1.5× |
+```
+FuelPriceSyncWorker (Background Service)
+  ├── startup  → fetch ราคาจาก FuelPrice:ApiUrl
+  ├── ทุก 24h  → fetch ราคาใหม่ → อัปเดต FuelSurcharge rule
+  └── fetch ล้มเหลว → log warning, ใช้ราคาเดิมใน rule
+```
 
-### Exchange Rates (THB base)
+ตั้งค่า:
+```json
+{ "FuelPrice": { "ApiUrl": "https://api.example.com/fuel-price" } }
+```
 
-USD, EUR, SGD, JPY ↔ THB (update via `PUT /rules/{id}`)
+ถ้า `ApiUrl` ว่าง → ไม่ fetch (ใช้ค่าจาก rules.json ตามเดิม)
+
+---
+
+## Observability
+
+- **Serilog** structured logging + `X-Correlation-ID` header ทุก request
+- **Rate Limiting** 100 requests/นาที ต่อ IP
+- **RFC 7807** ProblemDetails error format
+- **Retry Policy** OSRM API (3 attempts, 500ms delay)
 
 ---
 
 ## Tech Stack
 
-- **Runtime**: .NET 10 / ASP.NET Core
-- **Architecture**: Clean Architecture + Modular Monolith
-- **Storage**: In-memory (ConcurrentDictionary)
-- **Background Processing**: IHostedService + System.Threading.Channels
-- **Distance API**: OSRM (free, no API key required)
-- **API Docs**: Scalar (OpenAPI)
-- **Testing**: xUnit + NSubstitute + FluentAssertions (29 tests)
-- **Container**: Docker + docker-compose
+| Component | Technology |
+|-----------|-----------|
+| Runtime | .NET 10 / ASP.NET Core |
+| Architecture | Clean Architecture |
+| Storage | In-memory (JSON seed) |
+| Background Processing | IHostedService + Channels |
+| Distance API | OSRM (free, no API key) |
+| Fuel Price | Configurable external API |
+| API Docs | Scalar (OpenAPI) |
+| Logging | Serilog |
+| Testing | xUnit + NSubstitute + FluentAssertions (29 tests) |
+| Container | Docker + docker-compose |
+| CI | GitHub Actions |

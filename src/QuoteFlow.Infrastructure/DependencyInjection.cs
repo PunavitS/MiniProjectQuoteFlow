@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using QuoteFlow.Core.Jobs;
@@ -21,6 +22,16 @@ public static class DependencyInjection
         services.AddSingleton<IPricingEngine, PricingEngine>();
         services.AddSingleton<BulkJobWorker>();
         services.AddHostedService(sp => sp.GetRequiredService<BulkJobWorker>());
+        services.AddMemoryCache();
+        services.AddHttpClient<IFuelPriceService, ExternalFuelPriceService>((sp, client) =>
+        {
+            var config = sp.GetRequiredService<IConfiguration>();
+            var url = config["FuelPrice:ApiUrl"];
+            if (!string.IsNullOrWhiteSpace(url))
+                client.BaseAddress = new Uri(url);
+            client.Timeout = TimeSpan.FromSeconds(5);
+        });
+        services.AddHostedService<FuelPriceSyncWorker>();
         services.AddHttpClient<IDistanceService, OsrmDistanceService>((sp, client) =>
         {
             var config = sp.GetRequiredService<IConfiguration>();

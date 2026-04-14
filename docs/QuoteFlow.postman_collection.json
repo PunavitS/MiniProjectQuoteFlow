@@ -55,7 +55,31 @@
             "url": "{{baseUrl}}/quotes/price",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"originCode\": \"BKK\",\n  \"destinationCode\": \"CNX\",\n  \"weight\": 3.0,\n  \"basePrice\": 100\n}"
+              "raw": "{\n  \"originCode\": \"BKK\",\n  \"destinationCode\": \"HKT\",\n  \"weight\": 8.0,\n  \"basePrice\": 100\n}"
+            }
+          }
+        },
+        {
+          "name": "Calculate price (Motorcycle, short)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/quotes/price",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"originCode\": \"BKK\",\n  \"destinationCode\": \"NBI\",\n  \"weight\": 1.0,\n  \"basePrice\": 50,\n  \"vehicleType\": \"Motorcycle\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Calculate price (remote south, Van)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/quotes/price",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"originCode\": \"BKK\",\n  \"destinationCode\": \"NWT\",\n  \"weight\": 20.0,\n  \"basePrice\": 200,\n  \"vehicleType\": \"Van\"\n}"
             }
           }
         },
@@ -67,7 +91,7 @@
             "url": "{{baseUrl}}/quotes/bulk",
             "body": {
               "mode": "raw",
-              "raw": "[\n  { \"originCode\": \"BKK\", \"destinationCode\": \"CNX\", \"weight\": 3, \"basePrice\": 50 },\n  { \"originCode\": \"BKK\", \"destinationCode\": \"HKT\", \"weight\": 10, \"basePrice\": 100 }\n]"
+              "raw": "[\n  { \"originCode\": \"BKK\", \"destinationCode\": \"CNX\", \"weight\": 3, \"basePrice\": 50 },\n  { \"originCode\": \"BKK\", \"destinationCode\": \"HKT\", \"weight\": 10, \"basePrice\": 100 },\n  { \"originCode\": \"BKK\", \"destinationCode\": \"NWT\", \"weight\": 25, \"basePrice\": 300, \"currency\": \"USD\" }\n]"
             }
           }
         },
@@ -145,6 +169,30 @@
           }
         },
         {
+          "name": "Create ExchangeRate rule",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/rules",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"GBP → THB\",\n  \"ruleType\": 3,\n  \"priority\": 1,\n  \"isActive\": true,\n  \"effectiveFrom\": \"2026-01-01T00:00:00Z\",\n  \"parameters\": \"{\\\"fromCurrency\\\":\\\"GBP\\\",\\\"toCurrency\\\":\\\"THB\\\",\\\"rate\\\":45.00}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Create VehicleType rule",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/rules",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Vehicle: Pickup\",\n  \"ruleType\": 5,\n  \"priority\": 35,\n  \"isActive\": true,\n  \"effectiveFrom\": \"2026-01-01T00:00:00Z\",\n  \"parameters\": \"{\\\"vehicleType\\\":\\\"Pickup\\\",\\\"kmPerLiter\\\":11.0,\\\"priceMultiplier\\\":1.1}\"\n}"
+            }
+          }
+        },
+        {
           "name": "Update fuel price",
           "request": {
             "method": "PUT",
@@ -157,7 +205,7 @@
           }
         },
         {
-          "name": "Disable rule",
+          "name": "Disable rule (skip calculation)",
           "request": {
             "method": "PUT",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
@@ -181,7 +229,7 @@
       "name": "Locations",
       "item": [
         {
-          "name": "GET /locations",
+          "name": "GET /locations (77 provinces)",
           "request": {
             "method": "GET",
             "url": "{{baseUrl}}/locations"
@@ -192,6 +240,13 @@
           "request": {
             "method": "GET",
             "url": "{{baseUrl}}/locations/CNX"
+          }
+        },
+        {
+          "name": "GET /locations/NWT (remote south)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/locations/NWT"
           }
         }
       ]
