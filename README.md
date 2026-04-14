@@ -1,4 +1,4 @@
-# QuoteFlow — Mini Pricing Platform
+# QuoteFlow — MiniProjectQuoteFlow
 
 ระบบคำนวณราคาค่าจัดส่งพัสดุ รองรับกฎราคาที่ปรับแต่งได้ พร้อม bulk processing
 สร้างด้วย .NET 10 และ Clean Architecture
