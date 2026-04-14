@@ -25,7 +25,7 @@ public class RuleServiceTests
             Priority = 10,
             IsActive = true,
             EffectiveFrom = DateTimeOffset.UtcNow,
-            Parameters = "{}"
+            Parameters = """{"minWeight":0,"maxWeight":10,"price":100}"""
         };
 
         _repository.CreateAsync(Arg.Any<PricingRule>()).Returns(call => call.Arg<PricingRule>());
@@ -41,7 +41,14 @@ public class RuleServiceTests
     public async Task UpdateAsync_SetsUpdatedAt()
     {
         var id = Guid.NewGuid();
-        var rule = new PricingRule { Name = "Updated Rule" };
+        var rule = new PricingRule
+        {
+            Name = "Updated Rule",
+            RuleType = RuleType.WeightTier,
+            Priority = 10,
+            EffectiveFrom = DateTimeOffset.UtcNow,
+            Parameters = """{"minWeight":0,"maxWeight":10,"price":100}"""
+        };
 
         _repository.UpdateAsync(id, Arg.Any<PricingRule>()).Returns(call => call.ArgAt<PricingRule>(1));
 

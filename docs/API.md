@@ -221,7 +221,7 @@ curl -X POST http://localhost:8080/quotes/bulk/csv \
     "ruleType": 2,
     "priority": 10,
     "isActive": true,
-    "effectiveFrom": "2024-01-01T00:00:00Z",
+    "effectiveFrom": "2026-01-01T00:00:00Z",
     "effectiveTo": null,
     "parameters": "{\"minWeight\":0,\"maxWeight\":5,\"price\":100}"
   }
@@ -261,7 +261,7 @@ curl -X POST http://localhost:8080/quotes/bulk/csv \
   "ruleType": 0,
   "priority": 30,
   "isActive": true,
-  "effectiveFrom": "2024-01-01T00:00:00Z",
+  "effectiveFrom": "2026-01-01T00:00:00Z",
   "parameters": "{\"startHour\":8,\"endHour\":12,\"daysOfWeek\":[5],\"discountPercent\":20}"
 }
 ```
@@ -287,7 +287,7 @@ Seed: Flash Sale Friday Morning — ศุกร์ 08:00-12:00 ลด 20%
   "ruleType": 1,
   "priority": 20,
   "isActive": true,
-  "effectiveFrom": "2024-01-01T00:00:00Z",
+  "effectiveFrom": "2026-01-01T00:00:00Z",
   "parameters": "{\"areaCodes\":[\"CNX\",\"LPG\",\"PYY\",\"NAN\",\"PYO\",\"CMR\"],\"surchargeAmount\":50}"
 }
 ```
@@ -349,7 +349,7 @@ Seed:
   "ruleType": 3,
   "priority": 1,
   "isActive": true,
-  "effectiveFrom": "2024-01-01T00:00:00Z",
+  "effectiveFrom": "2026-01-01T00:00:00Z",
   "parameters": "{\"fromCurrency\":\"USD\",\"toCurrency\":\"THB\",\"rate\":36.00}"
 }
 ```
@@ -376,7 +376,7 @@ Seed: USD, EUR, SGD, JPY ↔ THB (8 rules)
   "ruleType": 4,
   "priority": 40,
   "isActive": true,
-  "effectiveFrom": "2024-01-01T00:00:00Z",
+  "effectiveFrom": "2026-01-01T00:00:00Z",
   "parameters": "{\"pricePerLiter\":40.50}"
 }
 ```
@@ -397,7 +397,7 @@ curl -X PUT http://localhost:8080/rules/22222222-0000-0000-0000-000000000001 \
     "ruleType": 4,
     "priority": 40,
     "isActive": true,
-    "effectiveFrom": "2024-01-01T00:00:00Z",
+    "effectiveFrom": "2026-01-01T00:00:00Z",
     "parameters": "{\"pricePerLiter\":42.50}"
   }'
 ```
@@ -418,7 +418,7 @@ curl -X PUT http://localhost:8080/rules/22222222-0000-0000-0000-000000000001 \
   "ruleType": 5,
   "priority": 35,
   "isActive": true,
-  "effectiveFrom": "2024-01-01T00:00:00Z",
+  "effectiveFrom": "2026-01-01T00:00:00Z",
   "parameters": "{\"vehicleType\":\"Truck\",\"kmPerLiter\":8.0,\"priceMultiplier\":1.5}"
 }
 ```
@@ -449,7 +449,7 @@ Seed:
 ```bash
 curl -X PUT http://localhost:8080/rules/{id} \
   -H "Content-Type: application/json" \
-  -d '{ "name": "...", "ruleType": 4, "priority": 40, "isActive": false, "effectiveFrom": "2024-01-01T00:00:00Z", "parameters": "{...}" }'
+  -d '{ "name": "...", "ruleType": 4, "priority": 40, "isActive": false, "effectiveFrom": "2026-01-01T00:00:00Z", "parameters": "{...}" }'
 ```
 
 ตั้งวันหมดอายุ:

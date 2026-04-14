@@ -3,12 +3,21 @@ using FluentAssertions;
 using QuoteFlow.Core.Pricing;
 using QuoteFlow.Core.Rules;
 using QuoteFlow.Infrastructure.Pricing;
+using QuoteFlow.Infrastructure.Pricing.Handlers;
 
 namespace QuoteFlow.UnitTests.Pricing;
 
 public class PricingEngineTests
 {
-    private readonly PricingEngine _engine = new();
+    private readonly PricingEngine _engine = new(
+    [
+        new ExchangeRateHandler(),
+        new WeightTierHandler(),
+        new VehicleTypeHandler(),
+        new FuelSurchargeHandler(),
+        new RemoteAreaSurchargeHandler(),
+        new TimeWindowPromotionHandler()
+    ]);
 
     private static PricingRule WeightTierRule(decimal min, decimal max, decimal price, int priority = 10) => new()
     {

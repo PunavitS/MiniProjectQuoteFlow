@@ -81,7 +81,7 @@ FinalPrice = BasePrice + Surcharge - Discount  (ขั้นต่ำ 0)
   "ruleType": 2,
   "priority": 10,
   "isActive": true,
-  "effectiveFrom": "2024-01-01T00:00:00Z",
+  "effectiveFrom": "2026-01-01T00:00:00Z",
   "parameters": "{\"minWeight\":0,\"maxWeight\":5,\"price\":100}"
 }
 ```
@@ -104,7 +104,7 @@ FinalPrice = BasePrice + Surcharge - Discount  (ขั้นต่ำ 0)
   "ruleType": 1,
   "priority": 20,
   "isActive": true,
-  "effectiveFrom": "2024-01-01T00:00:00Z",
+  "effectiveFrom": "2026-01-01T00:00:00Z",
   "parameters": "{\"areaCodes\":[\"CNX\",\"LPG\",\"PYY\",\"NAN\",\"PYO\",\"CMR\"],\"surchargeAmount\":50}"
 }
 ```
@@ -128,7 +128,7 @@ FinalPrice = BasePrice + Surcharge - Discount  (ขั้นต่ำ 0)
   "ruleType": 0,
   "priority": 30,
   "isActive": true,
-  "effectiveFrom": "2024-01-01T00:00:00Z",
+  "effectiveFrom": "2026-01-01T00:00:00Z",
   "parameters": "{\"startHour\":8,\"endHour\":12,\"daysOfWeek\":[5],\"discountPercent\":20}"
 }
 ```
@@ -151,7 +151,7 @@ FinalPrice = BasePrice + Surcharge - Discount  (ขั้นต่ำ 0)
   "ruleType": 3,
   "priority": 1,
   "isActive": true,
-  "effectiveFrom": "2024-01-01T00:00:00Z",
+  "effectiveFrom": "2026-01-01T00:00:00Z",
   "parameters": "{\"fromCurrency\":\"USD\",\"toCurrency\":\"THB\",\"rate\":36.00}"
 }
 ```
@@ -181,7 +181,7 @@ FinalPrice = BasePrice + Surcharge - Discount  (ขั้นต่ำ 0)
   "ruleType": 4,
   "priority": 40,
   "isActive": true,
-  "effectiveFrom": "2024-01-01T00:00:00Z",
+  "effectiveFrom": "2026-01-01T00:00:00Z",
   "parameters": "{\"pricePerLiter\":40.50}"
 }
 ```
@@ -202,7 +202,7 @@ FinalPrice = BasePrice + Surcharge - Discount  (ขั้นต่ำ 0)
   "ruleType": 5,
   "priority": 35,
   "isActive": true,
-  "effectiveFrom": "2024-01-01T00:00:00Z",
+  "effectiveFrom": "2026-01-01T00:00:00Z",
   "parameters": "{\"vehicleType\":\"Truck\",\"kmPerLiter\":8.0,\"priceMultiplier\":1.5}"
 }
 ```
@@ -382,7 +382,7 @@ curl -X PUT http://localhost:8080/rules/22222222-0000-0000-0000-000000000001 \
     "ruleType": 4,
     "priority": 40,
     "isActive": true,
-    "effectiveFrom": "2024-01-01T00:00:00Z",
+    "effectiveFrom": "2026-01-01T00:00:00Z",
     "parameters": "{\"pricePerLiter\":42.50}"
   }'
 ```
@@ -397,7 +397,7 @@ curl -X PUT http://localhost:8080/rules/22222222-0000-0000-0000-000000000001 \
     "ruleType": 4,
     "priority": 40,
     "isActive": false,
-    "effectiveFrom": "2024-01-01T00:00:00Z",
+    "effectiveFrom": "2026-01-01T00:00:00Z",
     "parameters": "{\"pricePerLiter\":40.50}"
   }'
 ```

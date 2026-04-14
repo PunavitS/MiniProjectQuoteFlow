@@ -8,6 +8,7 @@ using QuoteFlow.Core.Rules;
 using QuoteFlow.Infrastructure.Jobs;
 using QuoteFlow.Infrastructure.Locations;
 using QuoteFlow.Infrastructure.Pricing;
+using QuoteFlow.Infrastructure.Pricing.Handlers;
 using QuoteFlow.Infrastructure.Rules;
 
 namespace QuoteFlow.Infrastructure;
@@ -19,6 +20,12 @@ public static class DependencyInjection
         services.AddSingleton<IRuleRepository, RuleRepository>();
         services.AddSingleton<IJobRepository, JobRepository>();
         services.AddSingleton<ILocationRepository, LocationRepository>();
+        services.AddSingleton<IRuleHandler, ExchangeRateHandler>();
+        services.AddSingleton<IRuleHandler, WeightTierHandler>();
+        services.AddSingleton<IRuleHandler, VehicleTypeHandler>();
+        services.AddSingleton<IRuleHandler, FuelSurchargeHandler>();
+        services.AddSingleton<IRuleHandler, RemoteAreaSurchargeHandler>();
+        services.AddSingleton<IRuleHandler, TimeWindowPromotionHandler>();
         services.AddSingleton<IPricingEngine, PricingEngine>();
         services.AddSingleton<BulkJobWorker>();
         services.AddHostedService(sp => sp.GetRequiredService<BulkJobWorker>());

@@ -200,7 +200,7 @@
             "url": "{{baseUrl}}/rules/22222222-0000-0000-0000-000000000001",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Fuel Price (THB/Liter)\",\n  \"ruleType\": 4,\n  \"priority\": 40,\n  \"isActive\": true,\n  \"effectiveFrom\": \"2024-01-01T00:00:00Z\",\n  \"parameters\": \"{\\\"pricePerLiter\\\":42.50}\"\n}"
+              "raw": "{\n  \"name\": \"Fuel Price (THB/Liter)\",\n  \"ruleType\": 4,\n  \"priority\": 40,\n  \"isActive\": true,\n  \"effectiveFrom\": \"2026-01-01T00:00:00Z\",\n  \"parameters\": \"{\\\"pricePerLiter\\\":42.50}\"\n}"
             }
           }
         },
@@ -212,7 +212,7 @@
             "url": "{{baseUrl}}/rules/{{ruleId}}",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Flash Sale Friday Morning\",\n  \"ruleType\": 0,\n  \"priority\": 30,\n  \"isActive\": false,\n  \"effectiveFrom\": \"2024-01-01T00:00:00Z\",\n  \"parameters\": \"{\\\"startHour\\\":8,\\\"endHour\\\":12,\\\"daysOfWeek\\\":[5],\\\"discountPercent\\\":20}\"\n}"
+              "raw": "{\n  \"name\": \"Flash Sale Friday Morning\",\n  \"ruleType\": 0,\n  \"priority\": 30,\n  \"isActive\": false,\n  \"effectiveFrom\": \"2026-01-01T00:00:00Z\",\n  \"parameters\": \"{\\\"startHour\\\":8,\\\"endHour\\\":12,\\\"daysOfWeek\\\":[5],\\\"discountPercent\\\":20}\"\n}"
             }
           }
         },
